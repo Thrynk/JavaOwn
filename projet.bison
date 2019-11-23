@@ -53,6 +53,7 @@
 %token JMP
 %token MOVF
 %token NTSF
+%token INCF
 
 %left '+' '-'     /* associativité à gauche */
 %left '*' '/'     /* associativité à gauche */
@@ -90,7 +91,7 @@ instruction : expression { ins(OUT, 0); execute(); /*cout << "Resultat : " << $1
                                                                                     $1.pc_goto = pc - 1;
 
                                                                                 }
-                    bloc                                                        { get<1>(instructions[$1.pc_goto]) = pc + 1; }
+                    bloc                                                        { ins(INCF, 0, $3); get<1>(instructions[$1.pc_goto]) = pc + 1;  }
                   '}'                                                           { ins(JMP, 0); parsing = false; execute(); }
                 | variable                                                      { }
 				| /* Ligne vide */
@@ -141,6 +142,7 @@ string nom(int instruction){
         case JMP     : return "JMP";
         case MOVF    : return "MOVF";
         case NTSF    : return "NTSF";
+        case INCF    : return "INCF";
         default  : return to_string (instruction);
     }
 }
@@ -208,7 +210,6 @@ void execute(){
                 case NUMBER:
                     pile.push_back(get<1>(ins));
                     pc++;
-                    cout << "Number processed" << endl;
                 break;
 
                 case OUT:
@@ -227,22 +228,18 @@ void execute(){
 
                 case MOVF:
                     W = variables[get<2>(ins)];
-                    cout << "MOVF processed " << pc << " " << W << endl;
                     pc++;
                 break;
 
                 case NTSF:
                     x = depiler(pile);
-                    cout << x << endl;
-                    cout << " " << pc << endl;
-                    cout << W << endl;
-                    if(W < x) {cout << "false" << endl;}
                     pc = (W < x ? pc + 2 : pc + 1);
-                    cout << " " << pc << endl;
-                    variables[get<2>(ins)] = W + 1;
-                    cout << variables[get<2>(ins)] << endl;
-                    cout << "NTSF processed" << endl;
-                    system("pause");
+                break;
+
+                case INCF:
+                    x = variables[get<2>(ins)];
+                    variables[get<2>(ins)] = x + 1;
+                    pc++;
                 break;
             }
         }
