@@ -2,20 +2,22 @@
 	#include<iostream>
 	#include <map>
 	#include <string>
-
-#include <cstring>
+    #include <cstring>
 	#include <vector>
 	using namespace std;
+
+    #include "utils/Variable.h"
+
 	extern FILE *yyin;
 	extern int yylex();
 	int yyerror(char *s) { printf("%s\n", s); }
 
-	map<string, double> variables;
+	map<string, Variable> variables;
 
-	vector<tuple<int, double, string>> instructions;
+	vector<tuple<int, Variable, string>> instructions;
 	int pc = 0;
-	double W = 0;
-	inline ins(int c, double d, char * e = "") { instructions.push_back(make_tuple(c, d, e)); pc++; };
+	Variable W = 0;
+	inline ins(int c, Variable d, char * e = "") { instructions.push_back(make_tuple(c, d, e)); pc++; };
 
 
 	typedef struct adr {
@@ -26,7 +28,7 @@
 	bool parsing = false;
 	bool debug = false;
 
-	double depiler(vector<double> &pile);
+	Variable depiler(vector<Variable> &pile);
 
 	void execute();
 
@@ -110,7 +112,8 @@ condition : IDENTIFIER '<' expression {
                                        }
             ;
 variable : IDENTIFIER '=' expression {
-                                        variables[$1] = $3;
+                                        Variable var($3);
+                                        variables[$1] = var;
                                         //execute();
                                         strcpy($$, $1);
                                         ins(MOVLW, 0);
@@ -118,7 +121,9 @@ variable : IDENTIFIER '=' expression {
                                         /*cout << $1 << "=" << $3 << endl;*/
                                      }
                 | VAR_KEYWORD IDENTIFIER '=' expression {
-                                                            variables[$2] = $4;
+                                                            Variable var($4);
+                                                            variables[$2] = var;
+                                                            cout << bool(var) << endl;
                                                             //execute();
 
                                                             strcpy($$, $2);
@@ -170,24 +175,23 @@ void print_program(){
     cout << "=====================" << endl;
 }
 
-double depiler(vector<double> &pile) {
-    double t = pile[pile.size()-1];
+Variable depiler(vector<Variable> &pile) {
+    Variable t = pile[pile.size()-1];
     //cout << "Dépiler " << t << endl;
     pile.pop_back();
     return t;
 }
 
 void execute(){
-    vector<double> pile;
-    double x, y;
-    print_program();
+    vector<Variable> pile;
+    Variable x, y;
+    //print_program();
     if(!parsing){
 
         cout << "===== EXECUTION =====" << endl;
         pc = 0;
         while(pc < instructions.size() ){
             auto ins = instructions[pc];
-            //cout << pc << '\t' << nom(ins.first) << "\t" << ins.second << endl;
 
             switch(get<0>(ins)){
                 case '+':
@@ -231,11 +235,11 @@ void execute(){
 
                 case JNZ:
                     x = depiler(pile);
-                    pc = (x ? pc + 1:get<1>(ins));
+                    pc = (x ? pc + 1:get<1>(ins).toNumber());
                 break;
 
                 case JMP:
-                    pc = get<1>(ins);
+                    pc = get<1>(ins).toNumber();
                     if(debug) { cout << "JMP processed now pc = " << pc << endl; }
                 break;
 
@@ -254,7 +258,7 @@ void execute(){
 
                 case INCF:
                     x = variables[get<2>(ins)];
-                    variables[get<2>(ins)] = x + 1;
+                    variables[get<2>(ins)] = x.toNumber() + 1;
                     pc++;
                     if(debug) { cout << "INCF processed " << get<2>(ins) << " now equals " << variables[get<2>(ins)] << endl; }
                 break;
@@ -291,6 +295,6 @@ int main(int argc, char **argv) {
   else
     yyin = stdin;
   yyparse();
-
+  print_program();
   execute();
 }

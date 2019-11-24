@@ -2,5 +2,5 @@ all:
 	cmd /C del projet.exe projet.flex.cpp projet.bison.cpp projet.bison.h
 	flex -o projet.flex.cpp projet.flex
 	bison -d projet.bison -o projet.bison.cpp
-	g++ -o projet projet.flex.cpp projet.bison.cpp -w
+	g++ -o projet projet.flex.cpp projet.bison.cpp utils/*.cpp utils/PrimitiveTypes/*.cpp -w
 	projet.exe test.txt
