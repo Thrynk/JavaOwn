@@ -38,6 +38,7 @@
 	double valeur;
 	char name[50];
 	ADRESSE adresse;
+	char chaine[200];
 }
 
 %token <valeur> NUMBER
@@ -46,10 +47,12 @@
 %token SINON
 %token VAR_KEYWORD
 %token <adresse> FOR
+%token <chaine> STRING
 
 %type <valeur> expression
 %type <name> variable
 %type <valeur> condition
+%type <chaine> stringExpression
 
 %token OUT
 %token JNZ
@@ -100,6 +103,7 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                     bloc                                                        { ins(INCF, 0, $3); get<1>(instructions[$1.pc_false]) = pc + 1;  }
                   '}'                                                           { ins(JMP, $1.pc_goto); /*parsing = false; execute();*/ }
                 | variable                                                      { }
+                | stringExpression { ins(OUT, 0); }
 				| /* Ligne vide */
 				;
 condition : IDENTIFIER '<' expression {
@@ -123,14 +127,27 @@ variable : IDENTIFIER '=' expression {
                 | VAR_KEYWORD IDENTIFIER '=' expression {
                                                             Variable var($4);
                                                             variables[$2] = var;
-                                                            cout << bool(var) << endl;
-                                                            //execute();
 
                                                             strcpy($$, $2);
                                                             ins(MOVLW, 0);
                                                             ins(MOVWF, 0, $2);
-                                                            /*cout << "var " << $2 << "=" << $4 << endl;*/
                                                         }
+                | IDENTIFIER '=' stringExpression {
+                                                    Variable var($3);
+                                                    variables[$1] = var;
+                                                    //execute();
+                                                    strcpy($$, $1);
+                                                    ins(MOVLW, 0);
+                                                    ins(MOVWF, 0, $1);
+                                                    }
+                | VAR_KEYWORD IDENTIFIER '=' expression {
+                                                            Variable var($4);
+                                                            variables[$2] = var;
+
+                                                            strcpy($$, $2);
+                                                            ins(MOVLW, 0);
+                                                            ins(MOVWF, 0, $2);
+                                                         }
                 ;
 expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1 << "+" << $3 << endl;*/ }
 				| expression '-' expression { ins('-', 0); /*$$ = $1 - $3; cout << $1 << "-" << $3 << endl;*/ }
@@ -139,6 +156,10 @@ expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1
 				| '(' expression ')' { $$ = $2; }
 				| NUMBER { ins(NUMBER, $1); /*$$ = $1;*/ }
 				;
+
+stringExpression : STRING { ins(STRING, $1); }
+                    ;
+
 
 %%
 
@@ -158,6 +179,7 @@ string nom(int instruction){
         case INCF    : return "INCF";
         case MOVLW    : return "MOVLW";
         case MOVWF    : return "MOVWF";
+        case STRING  : return "STRING";
         default  : return to_string (instruction);
     }
 }
@@ -226,6 +248,12 @@ void execute(){
                     pile.push_back(get<1>(ins));
                     pc++;
                     if(debug) { cout << "NUM processed " << get<1>(ins) << endl; }
+                break;
+
+                case STRING:
+                    pile.push_back(get<1>(ins));
+                    pc++;
+                    if(debug) { cout << "STRING processed " << get<1>(ins) << endl; }
                 break;
 
                 case OUT:

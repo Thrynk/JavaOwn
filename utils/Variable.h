@@ -4,16 +4,20 @@
 #include <iostream>
 #include <string>
 #include "PrimitiveTypes/Number.h"
+#include "PrimitiveTypes/String.h"
 
 using namespace std;
 
 class Variable {
 private:
     Number n;
+    String s;
     string type;
 public:
     Variable();
+    Variable(int);
     Variable(double);
+    Variable(char * s);
 
     double toNumber();
 

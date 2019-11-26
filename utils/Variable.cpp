@@ -9,13 +9,27 @@ Variable::Variable(double n) {
     this->n.setValue(n);
 }
 
+Variable::Variable(int n) {
+    this->type = "Number";
+    this->n.setValue(n);
+}
+
+Variable::Variable(char * s){
+    this->type = "String";
+    string str(s);
+    this->s.setValue(str);
+}
+
 double Variable::toNumber() {
     return n.getValue();
 }
 
 ostream& operator<<(ostream& flux, const Variable& var){
     if(var.type.compare("Number") == 0){
-        cout << var.n.getValue();
+        flux << var.n.getValue();
+    }
+    else if(var.type.compare("String") == 0){
+        flux << var.s.getValue();
     }
 
     return flux;
