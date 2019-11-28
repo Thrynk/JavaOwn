@@ -20,6 +20,11 @@ Variable::Variable(char * s){
     this->s.setValue(str);
 }
 
+Variable::Variable(char * s, bool isObject){
+    this->type = "Object";
+    string str(s);
+}
+
 double Variable::toNumber() {
     return n.getValue();
 }

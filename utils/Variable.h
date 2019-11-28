@@ -17,7 +17,8 @@ public:
     Variable();
     Variable(int);
     Variable(double);
-    Variable(char * s);
+    Variable(char *);
+    Variable(char *, bool);
 
     double toNumber();
 
