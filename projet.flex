@@ -20,7 +20,11 @@ sinon|SINON|Sinon { return SINON; }
 
 pour|POUR|Pour { return FOR; }
 
-tantque|TANTQUE|Tantque { return WHILE; };
+tantque|TANTQUE|Tantque { return WHILE; }
+
+>= { return SUPOREQ; }
+\<= { return INFOREQ; }
+&& { return DOUBLEAND; }
 
 var { return VAR_KEYWORD; }
 

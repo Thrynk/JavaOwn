@@ -45,31 +45,42 @@
 %token VAR_KEYWORD
 %token <adresse> FOR
 %token <adresse> WHILE
+%token SUPOREQ
+%token INFOREQ
+%token DOUBLEAND
+
 
 %type <valeur> expression
 %type <name> variable
 %type <name> condition
+%type <adresse> conditionalOperator
 
 %token OUT
 %token JNZ
 %token JMP
 %token MOVF
-%token NTSF
+%token INFST
+%token SUPST
+%token SUPEQ
+%token INFEQ
 %token INCF
+%token DECF
 %token NOP
 %token MOVWF
 %token MOVLW
+%token ID
 
-%left '+' '-'     /* associativité à gauche */
-%left '*' '/'     /* associativité à gauche */
-
+%left '+' '-'
+%left '*' '/'
+%left  ">=" ">" "<" "<=" /* associativité à gauche */
+%right "="
 %%
 bloc : bloc instruction '\n'
 		| bloc instruction
 		| /* Epsilon */
 		;
 instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1 << endl;*/  /* fonction execute to add */ }
-				| SI expression '{' {
+				| SI condition '{' {
 										//parsing = true;
 										$1.pc_goto = pc;
 										ins(JNZ, 0);
@@ -89,9 +100,9 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
 				  '}'				 { /*parsing = false; execute();*/ }
                 | FOR '(' variable ';' condition ';' IDENTIFIER '+' '+' ')' '{' {
                                                                                     //parsing = true;
-                                                                                    $1.pc_goto = pc;
-                                                                                    ins(MOVF, 0, $3);
-                                                                                    ins(NTSF, 0);
+                                                                                    $1.pc_goto = pc - 2; //changer -2 si decommente les 2 lignes en dessous
+                                                                                    //ins(MOVF, 0, $3);
+                                                                                    //ins(INFST, 0);
                                                                                     ins(JMP, 0);
                                                                                     $1.pc_false = pc - 1;
 
@@ -99,9 +110,7 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                     bloc                                                        { ins(INCF, 0, $3); get<1>(instructions[$1.pc_false]) = pc + 1;  }
                   '}'                                                           { ins(JMP, $1.pc_goto); /*parsing = false; execute();*/ }
                 | WHILE '(' condition ')' '{'  {
-                                                    $1.pc_goto = pc;
-                                                    ins(MOVF, 0, $3);
-                                                    ins(NTSF, 0);
+                                                    $1.pc_goto = pc -2;
                                                     ins(JMP, 0);
                                                     $1.pc_false = pc -1;
                                                 }
@@ -112,16 +121,32 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                 | affectation                    { }
 				| /* Ligne vide */
 				;
-condition : IDENTIFIER '<' expression {
-                                        strcpy($$, $1);
-                                        /*if(variables[$1] < $3){
-                                            $$ = 1;
+condition : IDENTIFIER SUPOREQ expression {
+                                            strcpy($$, $1);
+                                            ins(MOVF, 0, $1);
+                                            ins(SUPEQ, 0);
                                         }
-                                        else {
-                                            $$ = 0;
-                                        }*/
+            | IDENTIFIER INFOREQ expression {
+                                            strcpy($$, $1);
+                                            ins(MOVF, 0, $1);
+                                            ins(INFEQ, 0);
+                                        }
+            |IDENTIFIER '<' expression {
+                                            strcpy($$, $1);
+                                            ins(MOVF, 0, $1);
+                                            ins(INFST, 0);
                                        }
+            | IDENTIFIER '>' expression  {
+                                            strcpy($$, $1);
+                                            ins(MOVF, 0, $1);
+                                            ins(SUPST, 0);
+                                       }
+            | '(' condition ')' { }
+            | condition conditionalOperator condition {  }
             ;
+
+conditionalOperator : DOUBLEAND { $1.pc_goto = pc; ins(JMP, 0);  }
+
 variable : IDENTIFIER '=' expression {
                                         variables[$1] = $3;
                                         //execute();
@@ -143,13 +168,17 @@ variable : IDENTIFIER '=' expression {
 affectation : IDENTIFIER '+' '+' {
                                     ins(INCF, 0, $1);
                                  }
+             | IDENTIFIER '-' '-' {
+                                    ins(DECF, 0, $1);
+                                    }
                 ;
 expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1 << "+" << $3 << endl;*/ }
 				| expression '-' expression { ins('-', 0); /*$$ = $1 - $3; cout << $1 << "-" << $3 << endl;*/ }
 				| expression '*' expression { ins('*', 0); /*$$ = $1 * $3; cout << $1 << "*" << $3 << endl;*/ }
 				| expression '/' expression { ins('/', 0); /*$$ = $1 / $3; cout << $1 << "/" << $3 << endl;*/ }
-				| '(' expression ')' { $$ = $2; }
+				| '(' expression ')' { }
 				| NUMBER { ins(NUMBER, $1); /*$$ = $1;*/ }
+				| IDENTIFIER { ins(ID, variables[$1])}
 				;
 
 %%
@@ -166,10 +195,15 @@ string nom(int instruction){
         case JNZ     : return "JNZ";
         case JMP     : return "JMP";
         case MOVF    : return "MOVF";
-        case NTSF    : return "NTSF";
+        case INFST   : return "INFST";
+        case SUPST   : return "SUPST";
+        case SUPEQ   : return "SUPEQ";
+        case INFEQ   : return "INFEQ";
         case INCF    : return "INCF";
+        case DECF    : return "DECF";
         case MOVLW    : return "MOVLW";
         case MOVWF    : return "MOVWF";
+        case ID    : return "ID";
         default  : return to_string (instruction);
     }
 }
@@ -235,6 +269,7 @@ void execute(){
                     pc++;
                 break;
 
+                case ID:
                 case NUMBER:
                     pile.push_back(get<1>(ins));
                     pc++;
@@ -262,11 +297,32 @@ void execute(){
                     if(debug) { cout << "MOVF processed now W = " << W << endl; }
                 break;
 
-                case NTSF:
+                case INFST:
                     x = depiler(pile);
                     pc = (W < x ? pc + 2 : pc + 1);
                     if(W < x){ pile.push_back(x); }
-                    if(debug) { cout << "NTSF processed now pc = " << pc << " because " << W << " was < to " << x << (W < x ? " true" : " false") << endl; }
+                    if(debug) { cout << "INFST processed now pc = " << pc << " because " << W << " was < to " << x << (W < x ? " true" : " false") << endl; }
+                break;
+
+                case SUPST:
+                    x = depiler(pile);
+                    pc = (W > x ? pc + 2 : pc + 1);
+                    if(W > x){ pile.push_back(x); }
+                    if(debug) { cout << "SUPST processed now pc = " << pc << " because " << W << " was > to " << x << (W > x ? " true" : " false") << endl; }
+                break;
+
+                case SUPEQ:
+                    x = depiler(pile);
+                    pc = (W >= x ? pc + 2 : pc + 1);
+                    if(W >= x){ pile.push_back(x); }
+                    if(debug) { cout << "SUPEQ processed now pc = " << pc << " because " << W << " was >= to " << x << (W >= x ? " true" : " false") << endl; }
+                break;
+
+                case INFEQ:
+                    x = depiler(pile);
+                    pc = (W <= x ? pc + 2 : pc + 1);
+                    if(W <= x){ pile.push_back(x); }
+                    if(debug) { cout << "INFEQ processed now pc = " << pc << " because " << W << " was <= to " << x << (W <= x ? " true" : " false") << endl; }
                 break;
 
                 case INCF:
@@ -275,6 +331,13 @@ void execute(){
                     pc++;
                     if(debug) { cout << "INCF processed " << get<2>(ins) << " now equals " << variables[get<2>(ins)] << endl; }
                 break;
+
+                case DECF:
+                    x = variables[get<2>(ins)];
+                    variables[get<2>(ins)] = x - 1;
+                    pc++;
+                    if(debug) { cout << "DECF processed " << get<2>(ins) << " now equals " << variables[get<2>(ins)] << endl; }
+                 break;
 
                 case MOVLW:
                     x = depiler(pile);
@@ -308,6 +371,6 @@ int main(int argc, char **argv) {
   else
     yyin = stdin;
   yyparse();
-
+  print_program();
   execute();
 }
