@@ -47,13 +47,12 @@
 %token <adresse> WHILE
 %token SUPOREQ
 %token INFOREQ
-%token DOUBLEAND
+%token <adresse> DOUBLEAND
 
 
 %type <valeur> expression
 %type <name> variable
-%type <name> condition
-%type <adresse> conditionalOperator
+%type <adresse> condition
 
 %token OUT
 %token JNZ
@@ -69,6 +68,7 @@
 %token MOVWF
 %token MOVLW
 %token ID
+%token AND
 
 %left '+' '-'
 %left '*' '/'
@@ -100,18 +100,18 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
 				  '}'				 { /*parsing = false; execute();*/ }
                 | FOR '(' variable ';' condition ';' IDENTIFIER '+' '+' ')' '{' {
                                                                                     //parsing = true;
-                                                                                    $1.pc_goto = pc - 2; //changer -2 si decommente les 2 lignes en dessous
+                                                                                    $1.pc_goto = pc - 3; //changer -2 si decommente les 2 lignes en dessous
                                                                                     //ins(MOVF, 0, $3);
                                                                                     //ins(INFST, 0);
-                                                                                    ins(JMP, 0);
+                                                                                    ins(JNZ, 0);
                                                                                     $1.pc_false = pc - 1;
 
                                                                                 }
                     bloc                                                        { ins(INCF, 0, $3); get<1>(instructions[$1.pc_false]) = pc + 1;  }
                   '}'                                                           { ins(JMP, $1.pc_goto); /*parsing = false; execute();*/ }
                 | WHILE '(' condition ')' '{'  {
-                                                    $1.pc_goto = pc -2;
-                                                    ins(JMP, 0);
+                                                    $1.pc_goto = pc -3;
+                                                    ins(JNZ, 0);
                                                     $1.pc_false = pc -1;
                                                 }
                     bloc                        {get<1>(instructions[$1.pc_false])= pc + 1;}
@@ -122,30 +122,24 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
 				| /* Ligne vide */
 				;
 condition : IDENTIFIER SUPOREQ expression {
-                                            strcpy($$, $1);
                                             ins(MOVF, 0, $1);
                                             ins(SUPEQ, 0);
                                         }
             | IDENTIFIER INFOREQ expression {
-                                            strcpy($$, $1);
                                             ins(MOVF, 0, $1);
                                             ins(INFEQ, 0);
                                         }
             |IDENTIFIER '<' expression {
-                                            strcpy($$, $1);
                                             ins(MOVF, 0, $1);
                                             ins(INFST, 0);
                                        }
             | IDENTIFIER '>' expression  {
-                                            strcpy($$, $1);
                                             ins(MOVF, 0, $1);
                                             ins(SUPST, 0);
                                        }
             | '(' condition ')' { }
-            | condition conditionalOperator condition {  }
+            | condition DOUBLEAND condition { ins(AND, 0); }
             ;
-
-conditionalOperator : DOUBLEAND { $1.pc_goto = pc; ins(JMP, 0);  }
 
 variable : IDENTIFIER '=' expression {
                                         variables[$1] = $3;
@@ -204,6 +198,7 @@ string nom(int instruction){
         case MOVLW    : return "MOVLW";
         case MOVWF    : return "MOVWF";
         case ID    : return "ID";
+        case AND   : return "AND";
         default  : return to_string (instruction);
     }
 }
@@ -299,30 +294,45 @@ void execute(){
 
                 case INFST:
                     x = depiler(pile);
-                    pc = (W < x ? pc + 2 : pc + 1);
-                    if(W < x){ pile.push_back(x); }
-                    if(debug) { cout << "INFST processed now pc = " << pc << " because " << W << " was < to " << x << (W < x ? " true" : " false") << endl; }
+                    //pc = (W < x ? pc + 2 : pc + 1);
+                    //if(W < x){ pile.push_back(x); }
+                    pile.push_back(W < x);
+                    pc++;
+                    if(debug) { cout << "INFST processed pushed " << (W < x) << " because " << W << " was < to " << x << " is " << (W < x ? "true" : "false") << endl; }
                 break;
 
                 case SUPST:
                     x = depiler(pile);
-                    pc = (W > x ? pc + 2 : pc + 1);
-                    if(W > x){ pile.push_back(x); }
-                    if(debug) { cout << "SUPST processed now pc = " << pc << " because " << W << " was > to " << x << (W > x ? " true" : " false") << endl; }
+                    //pc = (W > x ? pc + 2 : pc + 1);
+                    //if(W > x){ pile.push_back(x); }
+                    pile.push_back(W > x);
+                    pc++;
+                    if(debug) { cout << "SUPST processed pushed " << (W > x) << " because " << W << " was > to " << x << " is " << (W > x ? "true" : "false") << endl; }
                 break;
 
                 case SUPEQ:
                     x = depiler(pile);
-                    pc = (W >= x ? pc + 2 : pc + 1);
-                    if(W >= x){ pile.push_back(x); }
-                    if(debug) { cout << "SUPEQ processed now pc = " << pc << " because " << W << " was >= to " << x << (W >= x ? " true" : " false") << endl; }
+                    //pc = (W >= x ? pc + 2 : pc + 1);
+                    //if(W >= x){ pile.push_back(x); }
+                    pile.push_back(W >= x);
+                    pc++;
+                    if(debug) { cout << "SUPEQ processed pushed " << (W >= x) << " because " << W << " was >= to " << x << " is " << (W >= x ? "true" : "false") << endl; }
                 break;
 
                 case INFEQ:
                     x = depiler(pile);
-                    pc = (W <= x ? pc + 2 : pc + 1);
-                    if(W <= x){ pile.push_back(x); }
-                    if(debug) { cout << "INFEQ processed now pc = " << pc << " because " << W << " was <= to " << x << (W <= x ? " true" : " false") << endl; }
+                    //pc = (W <= x ? pc + 2 : pc + 1);
+                    //if(W <= x){ pile.push_back(x); }
+                    pile.push_back(W <= x);
+                    pc++;
+                    if(debug) { cout << "INFEQ processed pushed " << (W <= x) << " because " << W << " was <= to " << x << " is " << (W <= x ? "true" : "false") << endl; }
+                break;
+
+                case AND:
+                    x = depiler(pile);
+                    y = depiler(pile);
+                    pile.push_back(y && x);
+                    pc++;
                 break;
 
                 case INCF:
