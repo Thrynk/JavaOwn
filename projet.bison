@@ -2,6 +2,8 @@
 	#include<iostream>
 	#include <map>
 	#include <string>
+
+#include <cstring>
 	#include <vector>
 	using namespace std;
 	extern FILE *yyin;
@@ -10,9 +12,10 @@
 
 	map<string, double> variables;
 
-	vector<pair<int, double>> instructions;
+	vector<tuple<int, double, string>> instructions;
 	int pc = 0;
-	inline ins(int c, double d) { instructions.push_back(make_pair(c, d)); pc++; };
+	double W = 0;
+	inline ins(int c, double d, char * e = "") { instructions.push_back(make_tuple(c, d, e)); pc++; };
 
 
 	typedef struct adr {
@@ -21,6 +24,7 @@
 	} ADRESSE;
 
 	bool parsing = false;
+	bool debug = false;
 
 	double depiler(vector<double> &pile);
 
@@ -36,14 +40,24 @@
 
 %token <valeur> NUMBER
 %token <name> IDENTIFIER
-%type <valeur> expression
 %token <adresse> SI
 %token SINON
 %token VAR_KEYWORD
+%token <adresse> FOR
+
+%type <valeur> expression
+%type <name> variable
+%type <valeur> condition
 
 %token OUT
 %token JNZ
 %token JMP
+%token MOVF
+%token NTSF
+%token INCF
+%token NOP
+%token MOVWF
+%token MOVLW
 
 %left '+' '-'     /* associativité à gauche */
 %left '*' '/'     /* associativité à gauche */
@@ -53,27 +67,66 @@ bloc : bloc instruction '\n'
 		| bloc instruction
 		| /* Epsilon */
 		;
-instruction : expression { ins(OUT, 0); execute(); /*cout << "Resultat : " << $1 << endl;*/  /* fonction execute to add */ }
+instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1 << endl;*/  /* fonction execute to add */ }
 				| SI expression '{' {
-										parsing = true;
+										//parsing = true;
 										$1.pc_goto = pc;
 										ins(JNZ, 0);
 									 }
 				  bloc				 {
 										$1.pc_false = pc;
 										ins(JMP, 0);
-										instructions[$1.pc_goto].second = pc;
+										//instructions[$1.pc_goto].second = pc;
+										get<1>(instructions[$1.pc_goto]) = pc;
 									 }
 				  '}' '\n'			 {  }
 				  SINON '{'          {  }
 				  bloc				 {
-										instructions[$1.pc_false].second = pc;
+										//instructions[$1.pc_false].second = pc;
+                                        get<1>(instructions[$1.pc_false]) = pc;
 									 }
-				  '}'				 { parsing = false; execute(); }
-				| IDENTIFIER '=' expression { variables[$1] = $3; execute(); /*cout << $1 << "=" << $3 << endl;*/ }
-				| VAR_KEYWORD IDENTIFIER '=' expression { variables[$2] = $4; execute(); /*cout << "var " << $2 << "=" << $4 << endl;*/ }
+				  '}'				 { /*parsing = false; execute();*/ }
+                | FOR '(' variable ';' condition ';' IDENTIFIER '+' '+' ')' '{' {
+                                                                                    //parsing = true;
+                                                                                    $1.pc_goto = pc;
+                                                                                    ins(MOVF, 0, $3);
+                                                                                    ins(NTSF, 0);
+                                                                                    ins(JMP, 0);
+                                                                                    $1.pc_false = pc - 1;
+
+                                                                                }
+                    bloc                                                        { ins(INCF, 0, $3); get<1>(instructions[$1.pc_false]) = pc + 1;  }
+                  '}'                                                           { ins(JMP, $1.pc_goto); /*parsing = false; execute();*/ }
+                | variable                                                      { }
 				| /* Ligne vide */
 				;
+condition : IDENTIFIER '<' expression {
+                                        /*if(variables[$1] < $3){
+                                            $$ = 1;
+                                        }
+                                        else {
+                                            $$ = 0;
+                                        }*/
+                                       }
+            ;
+variable : IDENTIFIER '=' expression {
+                                        variables[$1] = $3;
+                                        //execute();
+                                        strcpy($$, $1);
+                                        ins(MOVLW, 0);
+                                        ins(MOVWF, 0, $1);
+                                        /*cout << $1 << "=" << $3 << endl;*/
+                                     }
+                | VAR_KEYWORD IDENTIFIER '=' expression {
+                                                            variables[$2] = $4;
+                                                            //execute();
+
+                                                            strcpy($$, $2);
+                                                            ins(MOVLW, 0);
+                                                            ins(MOVWF, 0, $2);
+                                                            /*cout << "var " << $2 << "=" << $4 << endl;*/
+                                                        }
+                ;
 expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1 << "+" << $3 << endl;*/ }
 				| expression '-' expression { ins('-', 0); /*$$ = $1 - $3; cout << $1 << "-" << $3 << endl;*/ }
 				| expression '*' expression { ins('*', 0); /*$$ = $1 * $3; cout << $1 << "*" << $3 << endl;*/ }
@@ -94,7 +147,12 @@ string nom(int instruction){
         case NUMBER  : return "NUM";
         case OUT     : return "OUT";
         case JNZ     : return "JNZ";
-        case JMP		: return "JMP";
+        case JMP     : return "JMP";
+        case MOVF    : return "MOVF";
+        case NTSF    : return "NTSF";
+        case INCF    : return "INCF";
+        case MOVLW    : return "MOVLW";
+        case MOVWF    : return "MOVWF";
         default  : return to_string (instruction);
     }
 }
@@ -103,7 +161,7 @@ void print_program(){
     cout << "==== CODE GENERE ====" << endl;
     int i = 0;
     for (auto ins : instructions )
-        cout << i++ << '\t' << nom(ins.first) << "\t" << ins.second << endl;
+        cout << i++ << '\t' << nom(get<0>(ins)) << "\t" << get<1>(ins) << "\t" << get<2>(ins) << endl;
     cout << "=====================" << endl;
     cout << "===== VARIABLES =====" << endl;
     for (auto it = variables.begin(); it != variables.end(); ++it){
@@ -122,15 +180,16 @@ double depiler(vector<double> &pile) {
 void execute(){
     vector<double> pile;
     double x, y;
+    print_program();
     if(!parsing){
-        //print_program();
+
         cout << "===== EXECUTION =====" << endl;
         pc = 0;
         while(pc < instructions.size() ){
             auto ins = instructions[pc];
             //cout << pc << '\t' << nom(ins.first) << "\t" << ins.second << endl;
 
-            switch(ins.first){
+            switch(get<0>(ins)){
                 case '+':
                     x = depiler(pile);
                     y = depiler(pile);
@@ -160,8 +219,9 @@ void execute(){
                 break;
 
                 case NUMBER:
-                    pile.push_back(ins.second);
+                    pile.push_back(get<1>(ins));
                     pc++;
+                    if(debug) { cout << "NUM processed " << get<1>(ins) << endl; }
                 break;
 
                 case OUT:
@@ -171,17 +231,56 @@ void execute(){
 
                 case JNZ:
                     x = depiler(pile);
-                    pc = (x ? pc + 1:ins.second);
+                    pc = (x ? pc + 1:get<1>(ins));
                 break;
 
                 case JMP:
-                    pc = ins.second;
+                    pc = get<1>(ins);
+                    if(debug) { cout << "JMP processed now pc = " << pc << endl; }
+                break;
+
+                case MOVF:
+                    W = variables[get<2>(ins)];
+                    pc++;
+                    if(debug) { cout << "MOVF processed now W = " << W << endl; }
+                break;
+
+                case NTSF:
+                    x = depiler(pile);
+                    pc = (W < x ? pc + 2 : pc + 1);
+                    if(W < x){ pile.push_back(x); }
+                    if(debug) { cout << "NTSF processed now pc = " << pc << " because " << W << " was < to " << x << (W < x ? " true" : " false") << endl; }
+                break;
+
+                case INCF:
+                    x = variables[get<2>(ins)];
+                    variables[get<2>(ins)] = x + 1;
+                    pc++;
+                    if(debug) { cout << "INCF processed " << get<2>(ins) << " now equals " << variables[get<2>(ins)] << endl; }
+                break;
+
+                case MOVLW:
+                    x = depiler(pile);
+                    W = x;
+                    pc++;
+                    if(debug) { cout << "MOVLW processed W = " << W << endl; }
+                break;
+
+                case MOVWF:
+                    variables[get<2>(ins)] = W;
+                    pc++;
+                    if(debug) { cout << "MOVWF processed " << get<2>(ins) << " = " << variables[get<2>(ins)] << endl; }
                 break;
             }
         }
         cout << "=====================" << endl;
         instructions.clear();
         pc = 0;
+        cout << "===== VARIABLES =====" << endl;
+        for (auto it = variables.begin(); it != variables.end(); ++it){
+            cout << it->first << " = " << it->second << endl;
+        }
+        cout << "=====================" << endl;
     }
 }
 
@@ -192,4 +291,6 @@ int main(int argc, char **argv) {
   else
     yyin = stdin;
   yyparse();
+
+  execute();
 }
