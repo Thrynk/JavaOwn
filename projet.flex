@@ -20,6 +20,8 @@ sinon|SINON|Sinon { return SINON; }
 
 pour|POUR|Pour { return FOR; }
 
+tantque|TANTQUE|Tantque { return WHILE; };
+
 var { return VAR_KEYWORD; }
 
 [A-Za-z_][0-9A-Za-z_]*  { strcpy(yylval.name,yytext); return IDENTIFIER; }

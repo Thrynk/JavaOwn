@@ -44,10 +44,11 @@
 %token SINON
 %token VAR_KEYWORD
 %token <adresse> FOR
+%token <adresse> WHILE
 
 %type <valeur> expression
 %type <name> variable
-%type <valeur> condition
+%type <name> condition
 
 %token OUT
 %token JNZ
@@ -97,10 +98,22 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                                                                                 }
                     bloc                                                        { ins(INCF, 0, $3); get<1>(instructions[$1.pc_false]) = pc + 1;  }
                   '}'                                                           { ins(JMP, $1.pc_goto); /*parsing = false; execute();*/ }
-                | variable                                                      { }
+                | WHILE '(' condition ')' '{'  {
+                                                    $1.pc_goto = pc;
+                                                    ins(MOVF, 0, $3);
+                                                    ins(NTSF, 0);
+                                                    ins(JMP, 0);
+                                                    $1.pc_false = pc -1;
+                                                }
+                    bloc                        {get<1>(instructions[$1.pc_false])= pc + 1;}
+                  '}'                           {ins(JMP, $1.pc_goto);}
+
+                | variable                       { }
+                | affectation                    { }
 				| /* Ligne vide */
 				;
 condition : IDENTIFIER '<' expression {
+                                        strcpy($$, $1);
                                         /*if(variables[$1] < $3){
                                             $$ = 1;
                                         }
@@ -126,6 +139,10 @@ variable : IDENTIFIER '=' expression {
                                                             ins(MOVWF, 0, $2);
                                                             /*cout << "var " << $2 << "=" << $4 << endl;*/
                                                         }
+                ;
+affectation : IDENTIFIER '+' '+' {
+                                    ins(INCF, 0, $1);
+                                 }
                 ;
 expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1 << "+" << $3 << endl;*/ }
 				| expression '-' expression { ins('-', 0); /*$$ = $1 - $3; cout << $1 << "-" << $3 << endl;*/ }
