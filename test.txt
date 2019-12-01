@@ -8,8 +8,11 @@ sinon{
 fonction test(){
 	i = 2
 	i
+	afficher()
 }
 l = 1
 l
+fonction afficher(){ i }
 test()
 k = 2
+k
