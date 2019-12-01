@@ -1,16 +1,11 @@
-Pour(j = 1; j<5; j++){
-	2
-}
 i=2
-j = 2
-si(i<5 && i>1 && j<3){
+si(i>5 || i<2){
     1
 }
 sinon{
     2
 }
-k = 1
-tantque(k<3){
-	3
-	k++
+fonction test(){
+	i = 2
+	i
 }

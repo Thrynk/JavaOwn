@@ -2,8 +2,7 @@
 	#include<iostream>
 	#include <map>
 	#include <string>
-
-#include <cstring>
+    #include <cstring>
 	#include <vector>
 	using namespace std;
 	extern FILE *yyin;
@@ -11,6 +10,7 @@
 	int yyerror(char *s) { printf("%s\n", s); }
 
 	map<string, double> variables;
+	map<string, int> functions;
 
 	vector<tuple<int, double, string>> instructions;
 	int pc = 0;
@@ -47,7 +47,9 @@
 %token <adresse> WHILE
 %token SUPOREQ
 %token INFOREQ
-%token <adresse> DOUBLEAND
+%token DOUBLEAND
+%token DOUBLEBAR
+%token <adresse> FUNCTION
 
 
 %type <valeur> expression
@@ -69,6 +71,9 @@
 %token MOVLW
 %token ID
 %token AND
+%token OR
+%token CALL
+%token ENDFUNC
 
 %left '+' '-'
 %left '*' '/'
@@ -117,6 +122,14 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                     bloc                        {get<1>(instructions[$1.pc_false])= pc + 1;}
                   '}'                           {ins(JMP, $1.pc_goto);}
 
+                | FUNCTION IDENTIFIER '('')' '{' {
+                                                    $1.pc_goto = pc;
+                                                    ins(JMP, 0);
+                                                    functions[$2] = pc;
+                                                 }
+                    bloc                         {  }
+                '}'                              { ins(ENDFUNC, 0); get<1>(instructions[$1.pc_goto]) = pc; }
+
                 | variable                       { }
                 | affectation                    { }
 				| /* Ligne vide */
@@ -139,6 +152,7 @@ condition : IDENTIFIER SUPOREQ expression {
                                        }
             | '(' condition ')' { }
             | condition DOUBLEAND condition { ins(AND, 0); }
+            | condition DOUBLEBAR condition { ins(OR, 0); }
             ;
 
 variable : IDENTIFIER '=' expression {
@@ -164,7 +178,7 @@ affectation : IDENTIFIER '+' '+' {
                                  }
              | IDENTIFIER '-' '-' {
                                     ins(DECF, 0, $1);
-                                    }
+                                  }
                 ;
 expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1 << "+" << $3 << endl;*/ }
 				| expression '-' expression { ins('-', 0); /*$$ = $1 - $3; cout << $1 << "-" << $3 << endl;*/ }
@@ -199,6 +213,8 @@ string nom(int instruction){
         case MOVWF    : return "MOVWF";
         case ID    : return "ID";
         case AND   : return "AND";
+        case OR    : return "OR";
+        case ENDFUNC : return "ENDFUNC";
         default  : return to_string (instruction);
     }
 }
@@ -333,6 +349,15 @@ void execute(){
                     y = depiler(pile);
                     pile.push_back(y && x);
                     pc++;
+                    if(debug){ cout << "AND processed pushed " << (y && x) << " because pile contained " << y << " and " << x << endl;  }
+                break;
+
+                case OR:
+                    x = depiler(pile);
+                    y = depiler(pile);
+                    pile.push_back(y || x);
+                    pc++;
+                    if(debug){ cout << "OR processed pushed " << (y || x) << " because pile contained " << y << " and " << x << endl;  }
                 break;
 
                 case INCF:

@@ -22,9 +22,12 @@ pour|POUR|Pour { return FOR; }
 
 tantque|TANTQUE|Tantque { return WHILE; }
 
+fonction|FONCTION|Fonction { return FUNCTION; }
+
 >= { return SUPOREQ; }
 \<= { return INFOREQ; }
 && { return DOUBLEAND; }
+\|\| { return DOUBLEBAR; }
 
 var { return VAR_KEYWORD; }
 
