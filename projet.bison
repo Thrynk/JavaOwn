@@ -4,6 +4,7 @@
 	#include <string>
     #include <cstring>
 	#include <vector>
+    #include <stack>
 	using namespace std;
 	extern FILE *yyin;
 	extern int yylex();
@@ -129,7 +130,7 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                                                  }
                     bloc                         {  }
                 '}'                              { ins(ENDFUNC, 0); get<1>(instructions[$1.pc_goto]) = pc; }
-
+                | IDENTIFIER '('')'              { ins(CALL, 0, $1); }
                 | variable                       { }
                 | affectation                    { }
 				| /* Ligne vide */
@@ -215,6 +216,7 @@ string nom(int instruction){
         case AND   : return "AND";
         case OR    : return "OR";
         case ENDFUNC : return "ENDFUNC";
+        case CALL  : return "CALL";
         default  : return to_string (instruction);
     }
 }
@@ -242,6 +244,7 @@ double depiler(vector<double> &pile) {
 void execute(){
     vector<double> pile;
     double x, y;
+    stack<int> pile_stack_pointer;
     print_program();
     if(!parsing){
 
@@ -385,6 +388,16 @@ void execute(){
                     variables[get<2>(ins)] = W;
                     pc++;
                     if(debug) { cout << "MOVWF processed " << get<2>(ins) << " = " << variables[get<2>(ins)] << endl; }
+                break;
+
+                case CALL:
+                    pile_stack_pointer.push(pc+1);
+                    pc = functions[get<2>(ins)];
+                break;
+
+                case ENDFUNC:
+                    pc = pile_stack_pointer.top();
+                    pile_stack_pointer.pop();
                 break;
             }
         }

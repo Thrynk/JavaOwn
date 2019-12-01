@@ -1,5 +1,5 @@
 i=2
-si(i>5 || i<2){
+si(i<5 || i<2){
     1
 }
 sinon{
@@ -9,3 +9,7 @@ fonction test(){
 	i = 2
 	i
 }
+l = 1
+l
+test()
+k = 2
