@@ -1,11 +1,23 @@
 i=2
-si(i>5 || i<2){
+si(i<5 || i<2){
     1
 }
 sinon{
     2
 }
-fonction test(){
-	i = 2
-	i
+
+fonction afficher(num, num1, num2){
+ 	num
+ 	num1
+ 	num2
 }
+
+fonction test(i){
+	i
+	afficher(1, 2, 3)
+}
+l = 5
+l
+test(l)
+k = 2
+k

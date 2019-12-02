@@ -4,6 +4,7 @@
 	#include <string>
     #include <cstring>
 	#include <vector>
+    #include <stack>
 	using namespace std;
 	extern FILE *yyin;
 	extern int yylex();
@@ -11,6 +12,9 @@
 
 	map<string, double> variables;
 	map<string, int> functions;
+	map<string, vector<string>> func_vars;
+	vector<string> temp_vars;
+	vector<double> temp_values;
 
 	vector<tuple<int, double, string>> instructions;
 	int pc = 0;
@@ -77,8 +81,7 @@
 
 %left '+' '-'
 %left '*' '/'
-%left  ">=" ">" "<" "<=" /* associativité à gauche */
-%right "="
+
 %%
 bloc : bloc instruction '\n'
 		| bloc instruction
@@ -122,18 +125,41 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                     bloc                        {get<1>(instructions[$1.pc_false])= pc + 1;}
                   '}'                           {ins(JMP, $1.pc_goto);}
 
-                | FUNCTION IDENTIFIER '('')' '{' {
+                | FUNCTION IDENTIFIER '(' parametresFunction ')' '{' {
                                                     $1.pc_goto = pc;
                                                     ins(JMP, 0);
                                                     functions[$2] = pc;
+                                                    func_vars[$2] = temp_vars;
+                                                    temp_vars.clear();
                                                  }
                     bloc                         {  }
                 '}'                              { ins(ENDFUNC, 0); get<1>(instructions[$1.pc_goto]) = pc; }
-
+                | IDENTIFIER '(' parametresDonnes ')'              {
+                                                                        ins(CALL, 0, $1);
+                                                                        for(int i = 0; i < func_vars[$1].size(); i++){
+                                                                            variables[func_vars[$1][i]] = temp_values[i];
+                                                                        }
+                                                                        temp_values.clear();
+                                                                   }
                 | variable                       { }
                 | affectation                    { }
 				| /* Ligne vide */
 				;
+
+parametresFunction : parametresFunction ',' parametreFunction {  }
+             | parametreFunction {}
+             | /* Epsilon */
+             ;
+
+parametreFunction : IDENTIFIER { temp_vars.push_back($1); }
+
+parametresDonnes : parametresDonnes ',' parametreDonne {  }
+                    | parametreDonne {}
+                    | /* Epsilon */
+                    ;
+
+parametreDonne : expression { temp_values.push_back($1); }
+
 condition : IDENTIFIER SUPOREQ expression {
                                             ins(MOVF, 0, $1);
                                             ins(SUPEQ, 0);
@@ -186,7 +212,7 @@ expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1
 				| expression '/' expression { ins('/', 0); /*$$ = $1 / $3; cout << $1 << "/" << $3 << endl;*/ }
 				| '(' expression ')' { }
 				| NUMBER { ins(NUMBER, $1); /*$$ = $1;*/ }
-				| IDENTIFIER { ins(ID, variables[$1])}
+				| IDENTIFIER { ins(ID, 0, $1); }
 				;
 
 %%
@@ -215,6 +241,7 @@ string nom(int instruction){
         case AND   : return "AND";
         case OR    : return "OR";
         case ENDFUNC : return "ENDFUNC";
+        case CALL  : return "CALL";
         default  : return to_string (instruction);
     }
 }
@@ -242,6 +269,7 @@ double depiler(vector<double> &pile) {
 void execute(){
     vector<double> pile;
     double x, y;
+    stack<int> pile_stack_pointer;
     print_program();
     if(!parsing){
 
@@ -281,6 +309,11 @@ void execute(){
                 break;
 
                 case ID:
+                    pile.push_back(variables[get<2>(ins)]);
+                    pc++;
+                    if(debug) { cout << "ID processed " << variables[get<2>(ins)] << endl; }
+                break;
+
                 case NUMBER:
                     pile.push_back(get<1>(ins));
                     pc++;
@@ -386,6 +419,16 @@ void execute(){
                     pc++;
                     if(debug) { cout << "MOVWF processed " << get<2>(ins) << " = " << variables[get<2>(ins)] << endl; }
                 break;
+
+                case CALL:
+                    pile_stack_pointer.push(pc+1);
+                    pc = functions[get<2>(ins)];
+                break;
+
+                case ENDFUNC:
+                    pc = pile_stack_pointer.top();
+                    pile_stack_pointer.pop();
+                break;
             }
         }
         cout << "=====================" << endl;
@@ -406,6 +449,6 @@ int main(int argc, char **argv) {
   else
     yyin = stdin;
   yyparse();
-  print_program();
+  //print_program();
   execute();
 }
