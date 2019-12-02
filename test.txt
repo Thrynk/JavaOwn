@@ -5,14 +5,19 @@ si(i<5 || i<2){
 sinon{
     2
 }
-fonction test(){
-	i = 2
-	i
-	afficher()
+
+fonction afficher(num, num1, num2){
+ 	num
+ 	num1
+ 	num2
 }
-l = 1
+
+fonction test(i){
+	i
+	afficher(1, 2, 3)
+}
+l = 5
 l
-fonction afficher(){ i }
-test()
+test(l)
 k = 2
 k
