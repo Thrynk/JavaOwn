@@ -7,11 +7,16 @@ using namespace std;
 
 #include "../Variable.h"
 
+class Variable;
+
 class Object {
 private:
     map<string, Variable> attributes;
 public:
-    Object(string);
+    Object();
+    Object(map<string, Variable>&);
+    void setValue(map<string, Variable>&);
+    string toJSON();
 };
 
 

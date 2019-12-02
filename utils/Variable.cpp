@@ -20,9 +20,10 @@ Variable::Variable(char * s){
     this->s.setValue(str);
 }
 
-Variable::Variable(char * s, bool isObject){
+Variable::Variable(map<string, Variable>& attributes){
     this->type = "Object";
-    string str(s);
+    this->o = new Object();
+    this->o->setValue(attributes);
 }
 
 double Variable::toNumber() {
@@ -36,6 +37,9 @@ ostream& operator<<(ostream& flux, const Variable& var){
     else if(var.type.compare("String") == 0){
         flux << var.s.getValue();
     }
+    else if(var.type.compare("Object") == 0){
+        flux << var.o->toJSON();
+    }
 
     return flux;
 }
@@ -44,6 +48,16 @@ Variable operator+(Variable& a, Variable& b){
     if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
         Variable var(a.n.getValue() + b.n.getValue());
         return var;
+    }
+    else if(a.type.compare("String") == 0 && b.type.compare("String") == 0){}
+}
+
+string Variable::toString(){
+    if(this->type.compare("Number") == 0){
+        return to_string(this->n.getValue());
+    }
+    else if(this->type.compare("String") == 0){
+        return this->s.getValue();
     }
 }
 

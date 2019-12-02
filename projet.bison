@@ -13,6 +13,7 @@
 	int yyerror(char *s) { printf("%s\n", s); }
 
 	map<string, Variable> variables;
+	map<string, Variable> temp_attributes;
 
 	vector<tuple<int, Variable, string>> instructions;
 	int pc = 0;
@@ -63,6 +64,7 @@
 %token NOP
 %token MOVWF
 %token MOVLW
+%token OBJECT
 
 %left '+' '-'     /* associativité à gauche */
 %left '*' '/'     /* associativité à gauche */
@@ -140,7 +142,7 @@ variable : IDENTIFIER '=' expression {
                                                     ins(MOVLW, 0);
                                                     ins(MOVWF, 0, $1);
                                                     }
-                | VAR_KEYWORD IDENTIFIER '=' expression {
+                | VAR_KEYWORD IDENTIFIER '=' stringExpression {
                                                             Variable var($4);
                                                             variables[$2] = var;
 
@@ -148,6 +150,16 @@ variable : IDENTIFIER '=' expression {
                                                             ins(MOVLW, 0);
                                                             ins(MOVWF, 0, $2);
                                                          }
+                | IDENTIFIER '=' '{'                    {  }
+                    attributes                          {
+                                                            Variable var(temp_attributes);
+                                                            variables[$1] = var;
+                                                            temp_attributes.clear();
+                                                            ins(OBJECT, var);
+                                                            ins(MOVLW, 0);
+                                                            ins(MOVWF, 0, $1);
+                                                        }
+                  '}'                                   {  }
                 ;
 expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1 << "+" << $3 << endl;*/ }
 				| expression '-' expression { ins('-', 0); /*$$ = $1 - $3; cout << $1 << "-" << $3 << endl;*/ }
@@ -160,6 +172,13 @@ expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1
 stringExpression : STRING { ins(STRING, $1); }
                     ;
 
+attributes : attributes ',' attribute {  }
+             | attribute {  }
+             ;
+
+attribute : IDENTIFIER ':' expression { temp_attributes[$1] = $3; }
+            | IDENTIFIER ':' stringExpression { temp_attributes[$1] = $3; }
+            | IDENTIFIER ':' IDENTIFIER { temp_attributes[$1] = variables[$3]; }
 
 %%
 
@@ -256,6 +275,12 @@ void execute(){
                     if(debug) { cout << "STRING processed " << get<1>(ins) << endl; }
                 break;
 
+                case OBJECT:
+                    pile.push_back(get<1>(ins));
+                    pc++;
+                    if(debug) { cout << "OBJECT processed " << get<1>(ins) << endl; }
+                break;
+
                 case OUT:
                     cout << "Resultat : " << depiler(pile) << endl;
                     pc++;
@@ -323,6 +348,6 @@ int main(int argc, char **argv) {
   else
     yyin = stdin;
   yyparse();
-  print_program();
+  //print_program();
   execute();
 }

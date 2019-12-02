@@ -16,7 +16,7 @@
 %%
 [0-9]+(\.[0-9]*)?([Ee][0-9]+)? { yylval.valeur = atof(yytext); return NUMBER; }
 
-\"[a-z]*\" { strcpy(yylval.chaine, yytext); return STRING; }
+\"[a-z0-9A-Z]*\" { strcpy(yylval.chaine, yytext); return STRING; }
 
 si|SI|Si { return SI; }
 sinon|SINON|Sinon { return SINON; }
