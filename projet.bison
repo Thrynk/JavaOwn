@@ -61,6 +61,7 @@
 %type <valeur> expression
 %type <name> variable
 %type <adresse> condition
+%type <adresse> si
 
 %token OUT
 %token JNZ
@@ -87,29 +88,12 @@
 %left '*' '/'
 
 %%
-bloc : bloc instruction '\n'
-		| bloc instruction
+bloc : bloc instruction
 		| /* Epsilon */
 		;
 instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1 << endl;*/  /* fonction execute to add */ }
-				| SI condition '{' {
-										//parsing = true;
-										$1.pc_goto = pc;
-										ins(JNZ, 0);
-									 }
-				  bloc				 {
-										$1.pc_false = pc;
-										ins(JMP, 0);
-										//instructions[$1.pc_goto].second = pc;
-										get<1>(instructions[$1.pc_goto]) = pc;
-									 }
-				  '}' '\n'			 {  }
-				  SINON '{'          {  }
-				  bloc				 {
-										//instructions[$1.pc_false].second = pc;
-                                        get<1>(instructions[$1.pc_false]) = pc;
-									 }
-				  '}'				 { /*parsing = false; execute();*/ }
+                | si
+				| siSinon
                 | FOR '(' variable ';' condition ';' IDENTIFIER '+' '+' ')' '{' {
                                                                                     //parsing = true;
                                                                                     $1.pc_goto = pc - 3; //changer -2 si decommente les 2 lignes en dessous
@@ -147,8 +131,26 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                                                                    }
                 | variable                       { }
                 | affectation                    { }
-				| /* Ligne vide */
 				;
+
+si : SI condition '{' {
+                            $1.pc_goto = pc;
+                            ins(JNZ, 0);
+                        }
+        bloc            {
+                            $1.pc_false = pc;
+
+                            get<1>(instructions[$1.pc_goto]) = pc;
+                        }
+    '}'                 { $$ = $1;}
+    ;
+
+siSinon : si SINON '{'  { ins(JMP, 0); }
+            bloc        {
+                            get<1>(instructions[$1.pc_false]) = pc;
+                        }
+        '}'
+    ;
 
 parametresFunction : parametresFunction ',' parametreFunction {  }
              | parametreFunction {}
@@ -246,6 +248,7 @@ string nom(int instruction){
         case SUPEQ   : return "SUPEQ";
         case INFEQ   : return "INFEQ";
         case DBLEQ   : return "DBLEQ";
+        case DFFROM  : return "DFFROM";
         case INCF    : return "INCF";
         case DECF    : return "DECF";
         case MOVLW    : return "MOVLW";

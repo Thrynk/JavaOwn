@@ -35,11 +35,9 @@ var { return VAR_KEYWORD; }
 
 [A-Za-z_][0-9A-Za-z_]*  { strcpy(yylval.name,yytext); return IDENTIFIER; }
 
-\r\n  							{  return '\n'; }
-\r								{  return '\n'; }
-\n								{  return '\n'; }
 
-[ \t]							{ }
+
+[ \t\r\n]+							{ }
 
 .								{  return yytext[0]; }
 %%
