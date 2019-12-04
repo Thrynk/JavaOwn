@@ -28,6 +28,8 @@ fonction|FONCTION|Fonction { return FUNCTION; }
 \<= { return INFOREQ; }
 && { return DOUBLEAND; }
 \|\| { return DOUBLEBAR; }
+"==" { return DOUBLEEQUAL; }
+"!=" { return DIFFERENTFROM; }
 
 var { return VAR_KEYWORD; }
 

@@ -1,5 +1,6 @@
 i=2
-si(i<5 || i<2){
+j = 3
+si(i!=j){
     1
 }
 sinon{
@@ -21,3 +22,9 @@ l
 test(l)
 k = 2
 k
+
+tantque(k < 5){
+	l = l + k
+	k++
+}
+l

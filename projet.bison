@@ -53,6 +53,8 @@
 %token INFOREQ
 %token DOUBLEAND
 %token DOUBLEBAR
+%token DOUBLEEQUAL
+%token DIFFERENTFROM
 %token <adresse> FUNCTION
 
 
@@ -68,6 +70,8 @@
 %token SUPST
 %token SUPEQ
 %token INFEQ
+%token DBLEQ
+%token DFFROM
 %token INCF
 %token DECF
 %token NOP
@@ -176,6 +180,14 @@ condition : IDENTIFIER SUPOREQ expression {
                                             ins(MOVF, 0, $1);
                                             ins(SUPST, 0);
                                        }
+            | IDENTIFIER DOUBLEEQUAL expression {
+                                                    ins(MOVF, 0, $1);
+                                                    ins(DBLEQ, 0);
+                                                }
+            | IDENTIFIER DIFFERENTFROM expression {
+                                                    ins(MOVF, 0, $1);
+                                                    ins(DFFROM, 0);
+                                                  }
             | '(' condition ')' { }
             | condition DOUBLEAND condition { ins(AND, 0); }
             | condition DOUBLEBAR condition { ins(OR, 0); }
@@ -233,6 +245,7 @@ string nom(int instruction){
         case SUPST   : return "SUPST";
         case SUPEQ   : return "SUPEQ";
         case INFEQ   : return "INFEQ";
+        case DBLEQ   : return "DBLEQ";
         case INCF    : return "INCF";
         case DECF    : return "DECF";
         case MOVLW    : return "MOVLW";
@@ -376,6 +389,20 @@ void execute(){
                     pc++;
                     if(debug) { cout << "INFEQ processed pushed " << (W <= x) << " because " << W << " was <= to " << x << " is " << (W <= x ? "true" : "false") << endl; }
                 break;
+
+                case DBLEQ:
+                    x = depiler(pile);
+                    pile.push_back(W==x);
+                    pc++;
+                    if(debug) { cout << "DBLEQ processed pushed " << (W == x) << " because " << W << " was == to " << x << " is " << (W == x ? "true" : "false") << endl; }
+                break;
+
+                case DFFROM:
+                    x = depiler(pile);
+                    pile.push_back(W!=x);
+                    pc++;
+                    if(debug) { cout << "DFFROM processed pushed " << (W != x) << " because " << W << " was != to " << x << " is " << (W != x ? "true" : "false") << endl; }
+                    break;
 
                 case AND:
                     x = depiler(pile);
