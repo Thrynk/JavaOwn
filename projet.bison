@@ -19,6 +19,7 @@
 	vector<tuple<int, double, string>> instructions;
 	int pc = 0;
 	double W = 0;
+	int nbCond = 1;
 	inline ins(int c, double d, char * e = "") { instructions.push_back(make_tuple(c, d, e)); pc++; };
 
 
@@ -106,7 +107,8 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
                     bloc                                                        { ins(INCF, 0, $3); get<1>(instructions[$1.pc_false]) = pc + 1;  }
                   '}'                                                           { ins(JMP, $1.pc_goto); /*parsing = false; execute();*/ }
                 | WHILE '(' condition ')' '{'  {
-                                                    $1.pc_goto = pc -3;
+                                                    $1.pc_goto = pc - 3 * nbCond - nbCond + 1;
+                                                    nbCond = 1;
                                                     ins(JNZ, 0);
                                                     $1.pc_false = pc -1;
                                                 }
@@ -136,6 +138,7 @@ instruction : expression { ins(OUT, 0); /*execute(); cout << "Resultat : " << $1
 si : SI condition '{' {
                             $1.pc_goto = pc;
                             ins(JNZ, 0);
+                            nbCond = 1;
                         }
         bloc            {
                             $1.pc_false = pc;
@@ -191,8 +194,8 @@ condition : IDENTIFIER SUPOREQ expression {
                                                     ins(DFFROM, 0);
                                                   }
             | '(' condition ')' { }
-            | condition DOUBLEAND condition { ins(AND, 0); }
-            | condition DOUBLEBAR condition { ins(OR, 0); }
+            | condition DOUBLEAND condition { ins(AND, 0); nbCond++; }
+            | condition DOUBLEBAR condition { ins(OR, 0); nbCond++; }
             ;
 
 variable : IDENTIFIER '=' expression {
