@@ -1,2 +1,21 @@
-a = "test"
+c = "test"
 b = { a: 2, c: "test2" }
+i=2
+j=3
+a=0
+tantque(i!=3 && j==3 && a == 0){
+	i
+	i++
+}
+
+si(i == 3 && a == 0 && j==3){
+	5
+}
+sinon{
+	2
+}
+
+tantque(i < 6){
+	3
+	i++
+}
