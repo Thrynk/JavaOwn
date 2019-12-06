@@ -88,7 +88,49 @@ bool operator<(Variable& a, Variable& b){
     }
 }
 
+bool operator>(Variable& a, Variable& b){
+    if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
+        return a.n.getValue() > b.n.getValue();
+    }
+}
+
+bool operator<=(Variable& a, Variable& b){
+    if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
+        return a.n.getValue() <= b.n.getValue();
+    }
+}
+
+bool operator>=(Variable& a, Variable& b){
+    if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
+        return a.n.getValue() >= b.n.getValue();
+    }
+}
+
+bool operator!=(Variable& a, Variable& b){
+    if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
+        return a.n.getValue() != b.n.getValue();
+    }
+}
+
+bool operator==(Variable& a, Variable& b){
+    if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
+        return a.n.getValue() == b.n.getValue();
+    }
+}
+
+bool operator||(Variable& a, Variable& b){
+    if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
+        return a.n.getValue() || b.n.getValue();
+    }
+}
+
+bool operator&&(Variable& a, Variable& b){
+    if(a.type.compare("Number") == 0 && b.type.compare("Number") == 0){
+        return a.n.getValue() && b.n.getValue();
+    }
+}
+
 Variable::operator bool(){
-    return n.getValue() == 0;
+    return n.getValue() == 1;
 }
 

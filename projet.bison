@@ -328,9 +328,9 @@ void execute(){
     vector<Variable> pile;
     Variable x, y;
     stack<int> pile_stack_pointer;
+    print_program();
     cout << "===== EXECUTION =====" << endl;
     pc = 0;
-
     while(pc < instructions.size() ) {
         auto ins = instructions[pc];
 
@@ -395,11 +395,14 @@ void execute(){
             case JNZ:
                 x = depiler(pile);
                 pc = (x ? pc + 1 : get<1>(ins).toNumber());
+                if(debug){ cout << "JNZ processed now pc = " << pc << " because " << x << endl; }
             break;
 
             case JMP:
                 pc = get<1>(ins).toNumber();
                 if (debug) { cout << "JMP processed now pc = " << pc << endl; }
+            break;
+
             case INFST:
                 x = depiler(pile);
                 //pc = (W < x ? pc + 2 : pc + 1);
@@ -527,6 +530,6 @@ int main(int argc, char **argv) {
   else
     yyin = stdin;
   yyparse();
-  print_program();
-  //execute();
+  //print_program();
+  execute();
 }

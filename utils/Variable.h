@@ -34,6 +34,13 @@ public:
     friend Variable operator*(Variable& a, Variable& b);
     friend Variable operator/(Variable& a, Variable& b);
     friend bool operator<(Variable& a, Variable& b);
+    friend bool operator>(Variable& a, Variable& b);
+    friend bool operator<=(Variable& a, Variable& b);
+    friend bool operator>=(Variable& a, Variable& b);
+    friend bool operator!=(Variable& a, Variable& b);
+    friend bool operator==(Variable& a, Variable& b);
+    friend bool operator||(Variable& a, Variable& b);
+    friend bool operator&&(Variable& a, Variable& b);
     operator bool();
 };
 
