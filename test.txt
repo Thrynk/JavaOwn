@@ -1,10 +1,19 @@
-i=1
+i=2
 j=3
-tantque(i<3){
-    2
-    tantque(j<5) {
-        3
-        j++
-    }
-    i++
+a=0
+tantque(i!=3 && j==3 && a == 0){
+	i
+	i++
+}
+
+si(i == 3 && a == 0 && j==3){
+	5
+}
+sinon{
+	2
+}
+
+tantque(i < 6){
+	3
+	i++
 }

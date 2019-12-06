@@ -20,17 +20,24 @@ sinon|SINON|Sinon { return SINON; }
 
 pour|POUR|Pour { return FOR; }
 
-tantque|TANTQUE|Tantque { return WHILE; };
+tantque|TANTQUE|Tantque { return WHILE; }
+
+fonction|FONCTION|Fonction { return FUNCTION; }
+
+>= { return SUPOREQ; }
+\<= { return INFOREQ; }
+&& { return DOUBLEAND; }
+\|\| { return DOUBLEBAR; }
+"==" { return DOUBLEEQUAL; }
+"!=" { return DIFFERENTFROM; }
 
 var { return VAR_KEYWORD; }
 
 [A-Za-z_][0-9A-Za-z_]*  { strcpy(yylval.name,yytext); return IDENTIFIER; }
 
-\r\n  							{  return '\n'; }
-\r								{  return '\n'; }
-\n								{  return '\n'; }
 
-[ \t]							{ }
+
+[ \t\r\n]+							{ }
 
 .								{  return yytext[0]; }
 %%
