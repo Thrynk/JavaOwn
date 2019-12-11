@@ -3,6 +3,8 @@
 	#include <map>
 	#include <string>
     #include <cstring>
+    #include <sstream>
+    #include <fstream>
 	#include <vector>
     #include <stack>
 	using namespace std;
@@ -24,7 +26,7 @@
 	int pc = 0;
 
 	Variable W = 0;
-	inline ins(int c, Variable d, char * e = "") { instructions.push_back(make_tuple(c, d, e)); pc++; };
+	inline ins(int c, Variable d, const char * e = "") { instructions.push_back(make_tuple(c, d, e)); pc++; };
 	int nbCond = 1;
 
 	typedef struct adr {
@@ -63,6 +65,7 @@
 %token DOUBLEEQUAL
 %token DIFFERENTFROM
 %token <adresse> FUNCTION
+%token AFFICHER
 
 %type <valeur> expression
 %type <name> variable
@@ -86,6 +89,7 @@
 %token MOVWF
 %token MOVLW
 %token OBJECT
+%token IDOFOBJECT
 %token ID
 %token AND
 %token OR
@@ -101,7 +105,7 @@ bloc : bloc instruction
 		| /* Epsilon */
 		;
 
-instruction : expression { ins(OUT, 0); }
+instruction : AFFICHER '(' expression ')' { ins(OUT, 0); }
                 | si
 				| siSinon
                 | FOR '(' variable ';' condition ';' IDENTIFIER '+' '+' ')' '{' {
@@ -258,6 +262,11 @@ expression : expression '+' expression { ins('+', 0); /*$$ = $1 + $3; cout << $1
 				| '(' expression ')' { }
 				| NUMBER { ins(NUMBER, $1); /*$$ = $1;*/ }
 				| IDENTIFIER { ins(ID, 0, $1); }
+				| IDENTIFIER '.' IDENTIFIER {
+                                                string name = string($1) + "." + string($3);
+                                                const char * nameChar = name.c_str();
+                                                ins (IDOFOBJECT, 0, nameChar)
+                                            }
 				;
 
 stringExpression : STRING { ins(STRING, $1); }
@@ -333,6 +342,8 @@ void execute(){
     pc = 0;
     while(pc < instructions.size() ) {
         auto ins = instructions[pc];
+        stringstream ss;
+        char str[256];
 
         switch (get<0>(ins)) {
             case '+':
@@ -379,16 +390,23 @@ void execute(){
                 pile.push_back(get<1>(ins));
                 pc++;
                 if (debug) { cout << "STRING processed " << get<1>(ins) << endl; }
-                break;
+            break;
 
             case OBJECT:
                 pile.push_back(get<1>(ins));
                 pc++;
                 if (debug) { cout << "OBJECT processed " << get<1>(ins) << endl; }
-                break;
+            break;
+
+            case IDOFOBJECT:
+                //cout << get<2>(ins).substr(0, get<2>(ins).find('.')) << " " << get<2>(ins).substr(get<2>(ins).find('.') + 1) << endl;
+                //cout << variables[get<2>(ins).substr(0, get<2>(ins).find('.'))].get(get<2>(ins).substr(get<2>(ins).find('.') + 1)) << endl;
+                pile.push_back(variables[get<2>(ins).substr(0, get<2>(ins).find('.'))].get(get<2>(ins).substr(get<2>(ins).find('.') + 1)));
+                pc++;
+            break;
 
             case OUT:
-                cout << "Resultat : " << depiler(pile) << endl;
+                cout << depiler(pile) << endl;
                 pc++;
                 break;
 
@@ -451,7 +469,7 @@ void execute(){
                 pile.push_back(W!=x);
                 pc++;
                 if(debug) { cout << "DFFROM processed pushed " << (W != x) << " because " << W << " was != to " << x << " is " << (W != x ? "true" : "false") << endl; }
-                break;
+            break;
 
             case AND:
                 x = depiler(pile);

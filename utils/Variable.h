@@ -27,6 +27,7 @@ public:
 
     double toNumber();
     string toString();
+    Variable get(string);
 
     friend ostream& operator<<(ostream&, const Variable&);
     friend Variable operator+(Variable& a, Variable& b);

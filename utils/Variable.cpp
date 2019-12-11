@@ -134,3 +134,7 @@ Variable::operator bool(){
     return n.getValue() == 1;
 }
 
+Variable Variable::get(string s){
+    return o->get(s);
+}
+

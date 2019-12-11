@@ -16,7 +16,7 @@
 %%
 [0-9]+(\.[0-9]*)?([Ee][0-9]+)? { yylval.valeur = atof(yytext); return NUMBER; }
 
-\"[a-z0-9A-Z]*\" { strcpy(yylval.chaine, yytext); return STRING; }
+\"[a-z0-9A-Z ]*\" { strcpy(yylval.chaine, yytext); return STRING; }
 
 si|SI|Si { return SI; }
 sinon|SINON|Sinon { return SINON; }
@@ -26,6 +26,7 @@ pour|POUR|Pour { return FOR; }
 tantque|TANTQUE|Tantque { return WHILE; }
 
 fonction|FONCTION|Fonction { return FUNCTION; }
+"console\.log" { return AFFICHER; }
 
 >= { return SUPOREQ; }
 \<= { return INFOREQ; }

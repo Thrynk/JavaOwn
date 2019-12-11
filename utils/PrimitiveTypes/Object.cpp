@@ -23,3 +23,7 @@ string Object::toJSON(){
     json = json + "}";
     return json;
 }
+
+Variable Object::get(string s){
+    return attributes[s];
+}

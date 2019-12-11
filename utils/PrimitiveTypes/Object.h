@@ -17,6 +17,7 @@ public:
     Object(map<string, Variable>&);
     void setValue(map<string, Variable>&);
     string toJSON();
+    Variable get(string);
 };
 
 
