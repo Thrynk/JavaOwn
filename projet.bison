@@ -106,6 +106,7 @@ bloc : bloc instruction
 		;
 
 instruction : AFFICHER '(' expression ')' { ins(OUT, 0); }
+                | AFFICHER '(' stringExpression ')' { ins(OUT, 0) }
                 | si
 				| siSinon
                 | FOR '(' variable ';' condition ';' IDENTIFIER '+' '+' ')' '{' {

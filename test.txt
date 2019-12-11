@@ -1,12 +1,8 @@
-i=2
-j=3
-a=0
-
-personne = {name: "Thomas Carin", age: 20}
-
-tantque(i!=4 && j==3){
-	console.log(personne.name)
-	i++
+fonction moyenne(note1, note2, note3, note4){
+	moyenne = (note1 + note2 + note3 + note4) / 4
+	console.log(moyenne)
 }
 
+moyenne(16, 17, 18, 9)
 
+personne = { name: "Thomas", age: 20, test: "c" }
